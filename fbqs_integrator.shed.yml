@@ -1,0 +1,19 @@
+- name: fbqs_integrator
+  owner: SPAMR-VET
+  version: 1.0.0
+  tool_panel_section_label: Quality Control & Reporting
+  description: >-
+    A pipeline that merges quality-checked Fastp, Bracken, and QUAST outputs into a unified STARAMR Excel report.
+  contributors:
+    - name: Elena Lavinia Diaconu
+      email: elena.diaconu@izslt.it
+    - name: Maciej Kochanowski
+      email: maciej.kochanowski@piwet.pulawy.pl
+    - name: Sebastien Leclercq
+      email: sebastien.leclercq@inrae.fr
+  tags:
+    - QC
+    - Fastp
+    - Bracken
+    - QUAST
+    - STARAMR
