@@ -1,7 +1,7 @@
 - name: fbqs_integrator
   owner: SPAMR-VET
   version: 1.0.0
-  tool_panel_section_label: Quality Control & Reporting
+  tool_panel_section_label: Quality Control
   description: >-
     A pipeline that merges quality-checked Fastp, Bracken, and QUAST outputs into a unified STARAMR Excel report.
   contributors:
