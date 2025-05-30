@@ -4,7 +4,7 @@
 # Input files are tooldistillator outputs from the Abromics Workflow, in JSON or EXCEL format. 
 # Perform quality check at the same time.
 #
-# Created: 2025-01-XX
+# Created: 2025-01-29
 # Last Edited: 2025-05-14 
 #
 # Contributors: 
