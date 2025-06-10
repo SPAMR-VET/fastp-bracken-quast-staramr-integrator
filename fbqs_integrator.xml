@@ -1,5 +1,7 @@
 <tool id="fbqs_integrator" name="FBQS Integrator" version="1.0.0" profile="21.05">
     <description>Merge quality-checked outputs from Fastp, Bracken and QUAST into consolidated STARAMR Excel report</description>
+    
+    <license>GPL-3.0</license>
 
     <requirements>
         <requirement type="package" version="3.9">python</requirement>
@@ -54,6 +56,10 @@ Automatically evaluates samples based on thresholds defined in your Python code:
 
 Enhanced Excel with additional sheets: FastP, Bracken, Quast, Quality_metrics
     ]]></help>
+
+    <creator>
+        <organization name="SPAMR-VET Consortium">
+    </creator>
 
     <citations>
         <citation type="bibtex">
