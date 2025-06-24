@@ -1,8 +1,6 @@
-<tool id="fbqs_integrator" name="FBQS Integrator" version="1.0.0" profile="21.05">
+<tool id="fbqs_integrator" name="FBQS Integrator" version="1.0.0" profile="21.05" license="GPL-3.0-or-later">
     <description>Merge quality-checked outputs from Fastp, Bracken and QUAST into consolidated STARAMR Excel report</description>
     
-    <license>GPL-3.0</license>
-
     <requirements>
         <requirement type="package" version="3.9">python</requirement>
         <requirement type="package" version="1.5.3">pandas</requirement>
