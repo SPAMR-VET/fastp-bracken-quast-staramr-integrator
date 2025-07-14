@@ -19,6 +19,12 @@
         #for $file in $quast_files
             '$file'
         #end for
+        #if $bracken_jsons
+        --bracken-jsons
+        #for $file in $bracken_jsons
+            '$file'
+        #end for
+        #end if
         --output '$output'
     ]]></command>
 
@@ -26,11 +32,14 @@
         <param name="staramr" type="data" format="xlsx" label="Input STARAMR report (.xlsx)" 
                help="STARAMR Excel report from upstream workflow"/>
         <param name="fastp_jsons" type="data" format="json" multiple="true" 
-               label="Fastp/Bracken JSON outputs" 
-               help="JSON files from tooldistillator containing Fastp and Bracken results"/>
+               label="Fastp JSON outputs" 
+               help="JSON files from tooldistillator containing Fastp results"/>
         <param name="quast_files" type="data" format="json,tabular,csv" multiple="true" 
                label="QUAST outputs" 
                help="QUAST result files in JSON, TSV, or CSV format"/>
+        <param name="bracken_jsons" type="data" format="json" multiple="true" optional="true"
+               label="Bracken JSON outputs (optional)" 
+               help="Optional separate Bracken JSON files from tooldistillator"/>
     </inputs>
 
     <outputs>
@@ -44,7 +53,7 @@ Integrates quality control outputs from the Abromics workflow into a unified STA
 
 **Quality Assessment**
 
-Automatically evaluates samples based on thresholds defined in your Python code:
+Automatically evaluates samples based on thresholds defined in the Python code:
 - Total reads after filtering: Warning <500k, Fail <400k
 - Read filtering ratio: Warning <0.8, Fail <0.6
 - Bracken main taxon proportion: Warning <90%, Fail <80%
