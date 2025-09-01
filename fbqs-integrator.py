@@ -438,7 +438,11 @@ def main():
     p.add_argument('--bracken-jsons', nargs='+', required=False, help="Bracken JSON files (optional)")
     p.add_argument('--output', required=True, help="output enhanced .xlsx")
     args = p.parse_args()
-    
+
+    # Change l'extension en xlsx :
+    if not args.output.endswith(".xlsx"):
+        args.output = args.output + ".xlsx"
+        
     all_data = process_samples(args.fastp_jsons, args.quast_files, args.bracken_jsons)
     fp_df, qu_df, br_df, qc_df = create_aggregated_dataframes(all_data)
     write_enhanced_excel(args.staramr, args.output, fp_df, qu_df, br_df, qc_df)
