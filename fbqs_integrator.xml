@@ -9,24 +9,25 @@
     </requirements>
 
     <command detect_errors="exit_code"><![CDATA[
-        python '$__tool_directory__/fbqs-integrator.py'
+    python '$__tool_directory__/fbqs-integrator.py'
         --staramr '$staramr'
         --fastp-jsons
-        #for $file in $fastp_jsons
-            '$file'
+        #for $input in $fastp_jsons:
+            '$input'
         #end for
-        --quast-files
-        #for $file in $quast_files
-            '$file'
+        --quast-files  
+        #for $input in $quast_files:
+            '$input'
         #end for
-        #if $bracken_jsons
-        --bracken-jsons
-        #for $file in $bracken_jsons
-            '$file'
-        #end for
+        #if $bracken_jsons:
+            --bracken-jsons
+            #for $input in $bracken_jsons:
+                '$input'
+            #end for
         #end if
-        --output '$output'
+        --output results.xlsx
     ]]></command>
+
 
     <inputs>
         <param name="staramr" type="data" format="xlsx" label="Input STARAMR report (.xlsx)" 
@@ -43,8 +44,14 @@
     </inputs>
 
     <outputs>
-        <data name="output" format="xlsx" label="Enhanced STARAMR report"/>
+        <data 
+            format="xlsx" 
+            name="enhanced_report" 
+            from_work_dir="results.xlsx" 
+            label="${tool.name} on ${on_string}: Enhanced STARAMR Report">
+        </data>
     </outputs>
+
 
     <help><![CDATA[
 **What it does**
