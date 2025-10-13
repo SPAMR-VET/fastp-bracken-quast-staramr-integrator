@@ -5,7 +5,7 @@
 # Perform quality check at the same time.
 #
 # Created: 2025-01-29
-# Last Edited: 2025-05-14
+# Last Edited: 2025-10-07
 #
 # Contributors:
 #
@@ -28,7 +28,7 @@ def extract_sample_id(file_path):
     try:
         with open(file_path, 'r') as f:
             data = json.load(f)
-        
+
         if isinstance(data, list):
             fastp_section = next((i for i in data if i.get('analysis_software_name') == 'fastp'), None)
             if fastp_section:
@@ -38,14 +38,14 @@ def extract_sample_id(file_path):
                     match = re.search(r'fastp report for ([^\s]+)\.fastqsanger\.gz', command_str)
                     if match:
                         return match.group(1)
-        
+
         if isinstance(data, dict) and data.get('analysis_software_name') == 'quast':
             for r in data.get('results', []):
                 if r.get('name') == 'quast_report' and isinstance(r.get('content'), list) and r['content']:
                     assembly = r['content'][0].get('Assembly', None)
                     if assembly:
                         return assembly
-        
+
         if isinstance(data, list):
             quast_section = next((i for i in data if i.get('analysis_software_name') == 'quast'), None)
             if quast_section and 'results' in quast_section:
@@ -54,10 +54,10 @@ def extract_sample_id(file_path):
                         assembly = r['content'][0].get('Assembly', None)
                         if assembly:
                             return assembly
-    
-    except Exception as e:
+
+    except Exception:
         pass
-    
+
     base = os.path.basename(file_path)
     name = re.sub(r'\.(json|csv|tsv|fasta|fa|xlsx|txt|dat)$', '', base, flags=re.IGNORECASE)
     for suffix in ['_FastpKraken', '_quast', '_fastp', '_kraken', '_bracken', '_recentrifuge', '_report', '-1']:
@@ -232,7 +232,6 @@ def calculate_quality_metrics(fastp, bracken, quast):
             else:
                 return
         fb.append(fb_msg)
-    
     chk(safe_int_convert(fastp.get('total_reads_after')), 'total reads after filtering', 'low')
     chk(safe_float_convert(fastp.get('ratio_reads_after')), 'ratio of filtered reads', 'low')
     chk(safe_float_convert(bracken.get('proportion_1')), 'Bracken main taxon proportion', 'low')
@@ -241,7 +240,6 @@ def calculate_quality_metrics(fastp, bracken, quast):
     chk(safe_int_convert(quast.get('Largest_contig')), 'largest contig','low')
     chk(safe_int_convert(quast.get('num_contigs_500bp')), 'number of contigs >500 bp', 'high')
     chk(safe_int_convert(quast.get('num_contigs_0bp')), 'number of contigs >0 bp', 'high')
-    
     if not fb:
         fb = ['All tests passed']
     return {'Quality_Module': result, 'Quality_Feedback': '; '.join(fb)}
@@ -253,15 +251,12 @@ def process_samples(fastp_files, quast_files, bracken_files=None):
     all_samples = set(fastp_map.keys()) | set(quast_map.keys()) | set(bracken_map.keys())
     all_data = []
     seen = set()
-    
-    for sample_id in all_samples:
+    for sample_id in sorted(all_samples):
         if sample_id in seen:
             print(f"Warning: duplicate sample ID {sample_id}")
             continue
         seen.add(sample_id)
-        
         entry = {'sample_id': sample_id}
-        
         if sample_id in fastp_map:
             try:
                 jd = json.load(open(fastp_map[sample_id]))
@@ -277,7 +272,6 @@ def process_samples(fastp_files, quast_files, bracken_files=None):
             entry['fastp'] = {}
             if not bracken_files:
                 entry['bracken'] = {}
-        
         if bracken_files:
             if sample_id in bracken_map:
                 try:
@@ -288,7 +282,6 @@ def process_samples(fastp_files, quast_files, bracken_files=None):
                     entry['bracken'] = {}
             else:
                 entry['bracken'] = {}
-        
         if sample_id in quast_map:
             try:
                 entry['quast'] = parse_quast_json(quast_map[sample_id])
@@ -298,10 +291,8 @@ def process_samples(fastp_files, quast_files, bracken_files=None):
         else:
             print(f"Warning: no QUAST file for {sample_id}")
             entry['quast'] = {}
-        
         entry['qc'] = calculate_quality_metrics(entry['fastp'], entry['bracken'], entry['quast'])
         all_data.append(entry)
-    
     return all_data
 
 def create_aggregated_dataframes(all_data):
@@ -316,7 +307,6 @@ def create_aggregated_dataframes(all_data):
     qu_cols = ['sample_id'] + [k for k in std if k in q_keys] + sorted([k for k in q_keys if k not in std and k!='sample_id'])
     qc_cols = ['sample_id','Quality_Module','Quality_Feedback',
                'total_reads_after','ratio_reads_after','bracken_main_taxon','proportion_of_main_taxon','reads_gc_content','N50','Total_length','Largest_contig','num_contigs_500bp','num_contigs_0bp']
-    
     fp_list, br_list, qu_list, qc_list = [],[],[],[]
     for e in all_data:
         sid = e['sample_id']
@@ -324,7 +314,6 @@ def create_aggregated_dataframes(all_data):
         br = e['bracken']
         qu = e['quast']
         qc = e['qc']
-        
         fp_list.append({c: fp.get(c,np.nan) if c!='sample_id' else sid for c in fp_cols})
         br_list.append({c: br.get(c,np.nan) if c!='sample_id' else sid for c in br_cols})
         qu_list.append({c: qu.get(c,np.nan) if c!='sample_id' else sid for c in qu_cols})
@@ -347,7 +336,6 @@ def create_aggregated_dataframes(all_data):
                 'num_contigs_0bp': safe_int_convert(qu.get('num_contigs_0bp'))
             }
         })
-    
     return (
         pd.DataFrame(fp_list, columns=fp_cols),
         pd.DataFrame(qu_list, columns=qu_cols),
@@ -361,61 +349,69 @@ def write_enhanced_excel(staramr_xlsx, output_xlsx, fastp_df, quast_df, bracken_
     except Exception as e:
         print(f"Error reading {staramr_xlsx}: {e}")
         return
-    
+
     if 'Summary' in orig:
-        orig['Summary'] = orig['Summary'].astype({'Quality Module': str,'Quality Module Feedback': str })
         sdf = orig['Summary']
-        samp = next((c for c in sdf.columns if 'id' in c.lower()), sdf.columns[0])
-        
-        fbcol = 'Quality Module'
-        if fbcol not in sdf.columns:
-            sdf.insert(sdf.columns.get_loc(samp)+1, fbcol, '')
-        fb_map = {
-            str(r['sample_id']): r['Quality_Module'] for _,r in quality_df.iterrows()
+        if 'Isolate ID' in sdf.columns:
+            samp = 'Isolate ID'
+        else:
+            ids = [c for c in sdf.columns if 'id' in c.lower()]
+            samp = ids[0] if ids else sdf.columns[0]
+
+        sample_id_map = {
+            str(r['sample_id']): {
+                'Quality_Module': r['Quality_Module'],
+                'Quality_Feedback': r['Quality_Feedback'],
+                'bracken_main_taxon': r['bracken_main_taxon']
+            }
+            for _, r in quality_df.iterrows()
         }
-        fb_df = pd.DataFrame(list(fb_map.items()), columns=[samp, fbcol])
-        fb_df[samp] = fb_df[samp].astype(str)
-        orig['Summary'].update(fb_df, join='left')
-        
-        fbcol = 'Quality Module Feedback'
-        if fbcol not in sdf.columns:
-            sdf.insert(sdf.columns.get_loc(samp)+2, fbcol, '')
-        fb_map = {
-            str(r['sample_id']): r['Quality_Feedback'] for _,r in quality_df.iterrows()
-        }
-        fb_df = pd.DataFrame(list(fb_map.items()), columns=[samp, fbcol])
-        fb_df[samp] = fb_df[samp].astype(str)
-        orig['Summary'].update(fb_df, join='left')
-        
-        fbcol = 'Detected main taxon'
-        if fbcol not in sdf.columns:
-            sdf.insert(sdf.columns.get_loc(samp)+2, fbcol, '')
-        fb_map = {
-            str(r['sample_id']): r['bracken_main_taxon'] for _,r in quality_df.iterrows()
-        }
-        fb_df = pd.DataFrame(list(fb_map.items()), columns=[samp, fbcol])
-        fb_df[samp] = fb_df[samp].astype(str)
-        orig['Summary'].update(fb_df, join='left')
-        
-        orig['Summary'].drop(columns=[f'Scheme'], inplace=True)
+
+        qm_new = sdf[samp].astype(str).map(lambda x: sample_id_map.get(x, {}).get('Quality_Module', np.nan))
+        if 'Quality Module' in sdf.columns:
+            sdf['Quality Module'] = qm_new.combine_first(sdf['Quality Module'])
+        else:
+            sdf['Quality Module'] = qm_new
+
+        qmf_new = sdf[samp].astype(str).map(lambda x: sample_id_map.get(x, {}).get('Quality_Feedback', np.nan))
+        if 'Quality Module Feedback' in sdf.columns:
+            sdf['Quality Module Feedback'] = qmf_new.combine_first(sdf['Quality Module Feedback'])
+        else:
+            sdf['Quality Module Feedback'] = qmf_new
+
+        detected = sdf[samp].astype(str).map(lambda x: sample_id_map.get(x, {}).get('bracken_main_taxon', ''))
+        if 'Detected main taxon' in sdf.columns:
+            sdf['Detected main taxon'] = sdf['Detected main taxon'].fillna('').replace('', detected)
+        else:
+            sdf['Detected main taxon'] = detected
+
+        if 'Detected main taxon' in sdf.columns:
+            detected_col = sdf.pop('Detected main taxon')
+            sdf.insert(2, 'Detected main taxon', detected_col)
+
+        orig['Summary'] = sdf
     else:
         print("Warning: no Summary sheet to update")
-    
+
     for name, df in orig.items():
-        if isinstance(df, pd.DataFrame):
-            if 'Isolate ID' in df.columns:
-                df.sort_values(by='Isolate ID', inplace=True)
-                orig[name] = df
-    
+        if name == 'Summary':
+            continue
+        if isinstance(df, pd.DataFrame) and 'Isolate ID' in df.columns:
+            try:
+                df_sorted = df.sort_values(by='Isolate ID', key=lambda x: x.astype(str)).reset_index(drop=True)
+                orig[name] = df_sorted
+            except Exception:
+                pass
+
     if not fastp_df.empty:
-        fastp_df.sort_values(by='sample_id', inplace=True)
+        fastp_df = fastp_df.sort_values(by='sample_id', key=lambda x: x.astype(str)).reset_index(drop=True)
     if not quast_df.empty:
-        quast_df.sort_values(by='sample_id', inplace=True)
+        quast_df = quast_df.sort_values(by='sample_id', key=lambda x: x.astype(str)).reset_index(drop=True)
     if not bracken_df.empty:
-        bracken_df.sort_values(by='sample_id', inplace=True)
+        bracken_df = bracken_df.sort_values(by='sample_id', key=lambda x: x.astype(str)).reset_index(drop=True)
     if not quality_df.empty:
-        quality_df.sort_values(by='sample_id', inplace=True)
-    
+        quality_df = quality_df.sort_values(by='sample_id', key=lambda x: x.astype(str)).reset_index(drop=True)
+
     with pd.ExcelWriter(output_xlsx, engine='openpyxl') as w:
         for name, df in orig.items():
             df.to_excel(w, sheet_name=name, index=False)
@@ -427,7 +423,7 @@ def write_enhanced_excel(staramr_xlsx, output_xlsx, fastp_df, quast_df, bracken_
             bracken_df.fillna('').to_excel(w, sheet_name='Bracken', index=False)
         if not quality_df.empty:
             quality_df.fillna('').to_excel(w, sheet_name='Quality_metrics', index=False)
-    
+
     print(f"Enhanced report saved to {output_xlsx}")
 
 def main():
@@ -438,7 +434,7 @@ def main():
     p.add_argument('--bracken-jsons', nargs='+', required=False, help="Bracken JSON files (optional)")
     p.add_argument('--output', required=True, help="output enhanced .xlsx")
     args = p.parse_args()
-    
+
     all_data = process_samples(args.fastp_jsons, args.quast_files, args.bracken_jsons)
     fp_df, qu_df, br_df, qc_df = create_aggregated_dataframes(all_data)
     write_enhanced_excel(args.staramr, args.output, fp_df, qu_df, br_df, qc_df)
