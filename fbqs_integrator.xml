@@ -9,7 +9,7 @@
     </requirements>
 
     <command detect_errors="exit_code"><![CDATA[
-    python '$__tool_directory__/fbqs-integrator.py'
+    python '$__tool_directory__/fbqs_integrator.py'
         --staramr '$staramr'
         --fastp-jsons
         #for $input in $fastp_jsons:
